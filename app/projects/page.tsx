@@ -59,9 +59,9 @@ export default async function ProjectsPage() {
               <h2 className="text-lg font-medium text-white mb-1">No projects yet</h2>
               <p className="text-sm text-gray-400 mb-5">Create your first AI-powered application</p>
               <Link href="/projects/new">
-                <Button className="bg-[#0e639c] hover:bg-[#1177bb] text-white">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Project
                 </Button>
               </Link>
             </CardContent>
