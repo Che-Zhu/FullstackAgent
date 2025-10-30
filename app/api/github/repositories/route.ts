@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
       fullName: repo.full_name,
       private: repo.private,
       description: repo.description,
+      updatedAt: repo.updated_at,
+      pushedAt: repo.pushed_at,
       owner: {
         login: repo.owner.login,
         type: repo.owner.type,
