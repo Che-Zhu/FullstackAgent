@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import { getProjectData } from "@/lib/project-data";
+import { ProjectPageLayout } from "@/components/project-page-layout";
 import ProjectTerminalView from "@/components/project-terminal-view";
 
 export default async function TerminalPage({
@@ -9,35 +7,14 @@ export default async function TerminalPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: id,
-      userId: session.user.id,
-    },
-    include: {
-      sandboxes: true,
-      environmentVariables: true,
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
-
-  const sandbox = project.sandboxes[0];
+  const { project } = await getProjectData(params);
 
   return (
-    <ProjectTerminalView
-      project={project}
-      sandbox={sandbox}
-    />
+    <ProjectPageLayout project={project}>
+      <ProjectTerminalView
+        project={project}
+        sandbox={project.sandboxes[0]}
+      />
+    </ProjectPageLayout>
   );
 }
