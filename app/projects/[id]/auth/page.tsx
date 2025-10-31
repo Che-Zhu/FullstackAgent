@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import { getProjectData } from "@/lib/project-data";
+import { ProjectPageLayout } from "@/components/project-page-layout";
 import AuthConfiguration from "@/components/auth-configuration";
 
 export default async function AuthConfigurationPage({
@@ -9,38 +7,20 @@ export default async function AuthConfigurationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/login");
-  }
-
+  const { project } = await getProjectData(params);
   const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: id,
-      userId: session.user.id,
-    },
-    include: {
-      sandboxes: true,
-      environmentVariables: true,
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
 
   const sandbox = project.sandboxes[0];
   // Get the main application URL (port 3000)
   const projectUrl = sandbox?.publicUrl || `https://sandbox-${id}.dgkwlntjskms.usw.sealos.io`;
 
   return (
-    <AuthConfiguration
-      project={project}
-      projectUrl={projectUrl}
-      environmentVariables={project.environmentVariables}
-    />
+    <ProjectPageLayout project={project}>
+      <AuthConfiguration
+        project={project}
+        projectUrl={projectUrl}
+        environmentVariables={project.environmentVariables}
+      />
+    </ProjectPageLayout>
   );
 }

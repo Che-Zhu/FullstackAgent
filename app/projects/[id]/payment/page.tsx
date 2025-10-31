@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import { getProjectData } from "@/lib/project-data";
+import { ProjectPageLayout } from "@/components/project-page-layout";
 import { CreditCard, DollarSign, Key, Copy, Check, ExternalLink, Zap } from "lucide-react";
 
 export default async function PaymentConfigurationPage({
@@ -9,34 +7,11 @@ export default async function PaymentConfigurationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: id,
-      userId: session.user.id,
-    },
-    include: {
-      environmentVariables: {
-        where: {
-          category: "payment",
-        },
-      },
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
+  const { project } = await getProjectData(params);
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e]">
+    <ProjectPageLayout project={project}>
+      <div className="h-full flex flex-col bg-[#1e1e1e]">
       {/* Header */}
       <div className="border-b border-[#3e3e42] bg-[#252526]">
         <div className="px-6 py-4">
@@ -211,6 +186,7 @@ export default async function PaymentConfigurationPage({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProjectPageLayout>
   );
 }

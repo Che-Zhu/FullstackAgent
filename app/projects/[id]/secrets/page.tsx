@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import { getProjectData } from "@/lib/project-data";
+import { ProjectPageLayout } from "@/components/project-page-layout";
 import { Key, Lock, Shield, Eye, EyeOff, Plus, Trash2, Copy, Check } from "lucide-react";
 import { readSystemEnv } from "@/lib/system-env";
 import { SystemSecretsList } from "@/components/secrets-list";
@@ -11,37 +9,17 @@ export default async function SecretsConfigurationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const { project } = await getProjectData(params);
 
-  if (!session) {
-    redirect("/login");
-  }
-
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: id,
-      userId: session.user.id,
-    },
-    include: {
-      environmentVariables: {
-        where: {
-          isSecret: true,
-        },
-      },
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
+  // Filter for secret environment variables
+  const projectSecrets = project.environmentVariables.filter(env => env.isSecret);
 
   // Read system-wide environment variables
   const systemSecrets = readSystemEnv();
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e]">
+    <ProjectPageLayout project={project}>
+      <div className="h-full flex flex-col bg-[#1e1e1e]">
       {/* Header */}
       <div className="border-b border-[#3e3e42] bg-[#252526]">
         <div className="px-6 py-4">
@@ -76,9 +54,9 @@ export default async function SecretsConfigurationPage({
               </button>
             </div>
 
-            {project.environmentVariables.length > 0 ? (
+            {projectSecrets.length > 0 ? (
               <div className="space-y-3">
-                {project.environmentVariables.map((secret) => (
+                {projectSecrets.map((secret) => (
                   <div
                     key={secret.id}
                     className="flex items-center justify-between p-3 bg-[#1e1e1e] rounded border border-[#3e3e42]"
@@ -150,6 +128,7 @@ export default async function SecretsConfigurationPage({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProjectPageLayout>
   );
 }

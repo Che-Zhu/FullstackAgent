@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import { getProjectData } from "@/lib/project-data";
+import { ProjectPageLayout } from "@/components/project-page-layout";
 import DatabaseConfiguration from "@/components/database-configuration";
 
 export default async function DatabaseConfigurationPage({
@@ -9,28 +7,7 @@ export default async function DatabaseConfigurationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: id,
-      userId: session.user.id,
-    },
-    include: {
-      sandboxes: true,
-      environmentVariables: true,
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
+  const { project } = await getProjectData(params);
 
   // If DATABASE_URL is not in environment variables, try to get it from other sources
   let dbUrlEnvVar = project.environmentVariables.find(env => env.key === "DATABASE_URL");
@@ -65,9 +42,11 @@ export default async function DatabaseConfigurationPage({
   }
 
   return (
-    <DatabaseConfiguration
-      project={project}
-      environmentVariables={enrichedEnvVars}
-    />
+    <ProjectPageLayout project={project}>
+      <DatabaseConfiguration
+        project={project}
+        environmentVariables={enrichedEnvVars}
+      />
+    </ProjectPageLayout>
   );
 }
