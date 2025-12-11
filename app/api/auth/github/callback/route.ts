@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { prisma } from '@/lib/db'
 import { env } from '@/lib/env'
 import { logger as baseLogger } from '@/lib/logger'
-import { prisma } from '@/lib/db'
 
 const logger = baseLogger.child({ module: 'api/auth/github/callback' })
 
