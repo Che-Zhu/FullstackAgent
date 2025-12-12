@@ -6,7 +6,8 @@ import { Github, Loader2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { commitChanges,initializeRepo } from '@/lib/services/repoService'
+import SettingsDialog from '@/components/dialog/settings-dialog'
+import { commitChanges, initializeRepo } from '@/lib/services/repoService'
 
 interface RepoStatusIndicatorProps {
   project: Pick<Project, 'id' | 'githubRepo' | 'name'>
@@ -16,6 +17,7 @@ export function RepoStatusIndicator({ project }: RepoStatusIndicatorProps) {
   const router = useRouter()
   const [isInitializing, setIsInitializing] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   // Create a new repository on GitHub
   const handleInitialize = async () => {
@@ -28,7 +30,12 @@ export function RepoStatusIndicator({ project }: RepoStatusIndicatorProps) {
         toast.success(result.message)
         router.refresh()
       } else {
-        toast.error(result.message)
+        if (result.code === 'GITHUB_NOT_BOUND') {
+          toast.error('Please connect your GitHub account first')
+          setShowSettings(true)
+        } else {
+          toast.error(result.message)
+        }
       }
     } catch (_error) {
       toast.error('An unexpected error occurred')
@@ -48,7 +55,12 @@ export function RepoStatusIndicator({ project }: RepoStatusIndicatorProps) {
       if (result.success) {
         toast.success(result.message)
       } else {
-        toast.error(result.message)
+        if (result.code === 'GITHUB_NOT_BOUND') {
+          toast.error('Please connect your GitHub account first')
+          setShowSettings(true)
+        } else {
+          toast.error(result.message)
+        }
       }
     } catch (_error) {
       toast.error('Failed to commit changes')
@@ -60,50 +72,58 @@ export function RepoStatusIndicator({ project }: RepoStatusIndicatorProps) {
   const isLoading = isInitializing || isCommitting
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1 px-1">
-        <div className="p-0.5">
-          {(!project.githubRepo && isInitializing) ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+    <>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 px-1">
+          <div className="p-0.5">
+            {(!project.githubRepo && isInitializing) ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Github className="w-4 h-4" />
+            )}
+          </div>
+          
+          {project.githubRepo ? (
+            <a 
+              href={project.githubRepo}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="hover:underline cursor-pointer text-sm"
+            >
+              {project.name}
+            </a>
           ) : (
-            <Github className="w-4 h-4" />
+            <button 
+              className={`cursor-pointer hover:underline text-sm ${isInitializing ? 'opacity-70' : ''}`}
+              onClick={handleInitialize}
+              disabled={isInitializing}
+            >
+               {isInitializing ? 'Syncing...' : 'Sync to GitHub'}
+            </button>
           )}
         </div>
-        
-        {project.githubRepo ? (
-          <a 
-            href={project.githubRepo}
-            target="_blank"
-            rel="noopener noreferrer" 
-            className="hover:underline cursor-pointer text-sm"
-          >
-            {project.name}
-          </a>
-        ) : (
+
+        {project.githubRepo && (
           <button 
-            className={`cursor-pointer hover:underline text-sm ${isInitializing ? 'opacity-70' : ''}`}
-            onClick={handleInitialize}
-            disabled={isInitializing}
+            className="flex items-center gap-1 px-1 rounded cursor-pointer transition-colors hover:bg-white/10"
+            onClick={handleCommit}
+            title="Sync changes"
+            disabled={isCommitting}
           >
-             {isInitializing ? 'Syncing...' : 'Sync to GitHub'}
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
           </button>
         )}
       </div>
 
-      {project.githubRepo && (
-        <button 
-          className="flex items-center gap-1 px-1 rounded cursor-pointer transition-colors hover:bg-white/10"
-          onClick={handleCommit}
-          title="Sync changes"
-          disabled={isCommitting}
-        >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-        </button>
-      )}
-    </div>
+      <SettingsDialog 
+        open={showSettings} 
+        onOpenChange={setShowSettings}
+        defaultTab="github"
+      />
+    </>
   )
 }

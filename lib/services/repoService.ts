@@ -7,6 +7,7 @@ import { execCommand, TtydExecError } from '@/lib/util/ttyd-exec'
 export type RepoInitResult = {
   success: boolean
   message: string
+  code?: string
 }
 
 /**
@@ -69,7 +70,7 @@ export async function initializeRepo(projectId: string): Promise<RepoInitResult>
     // Create GitHub repo first
     const repoResult = await createGithubRepo(project.name)
     if (!repoResult.success) {
-      return { success: false, message: repoResult.message }
+      return { success: false, message: repoResult.message, code: repoResult.code }
     }
 
     // Save repo URL to database
@@ -110,6 +111,7 @@ export type CreateRepoResult = {
   message: string
   repoUrl?: string
   cloneUrl?: string
+  code?: string
 }
 
 /**
@@ -133,14 +135,14 @@ export async function createGithubRepo(repoName: string): Promise<CreateRepoResu
     })
 
     if (!identity) {
-      return { success: false, message: 'GitHub identity not found. Please link your GitHub account.' }
+      return { success: false, message: 'GitHub identity not found. Please link your GitHub account.', code: 'GITHUB_NOT_BOUND' }
     }
 
     const metadata = identity.metadata as { token?: string }
     const token = metadata?.token
 
     if (!token) {
-      return { success: false, message: 'GitHub token not found in identity metadata.' }
+      return { success: false, message: 'GitHub token not found in identity metadata.', code: 'GITHUB_NOT_BOUND' }
     }
 
     // Call GitHub API to create repository
@@ -204,6 +206,10 @@ export async function commitChanges(projectId: string): Promise<RepoInitResult> 
     // Push changes to GitHub
     const pushResult = await pushToGithub(projectId)
     if (!pushResult.success) {
+      // If authentication failed, we should return failure so the UI can prompt for binding
+      if (pushResult.code === 'GITHUB_NOT_BOUND') {
+        return { success: false, message: pushResult.message, code: pushResult.code }
+      }
       return { success: true, message: `Committed locally but failed to push: ${pushResult.message}` }
     }
 
@@ -248,7 +254,7 @@ export async function pushToGithub(projectId: string): Promise<RepoInitResult> {
     const githubToken = metadata?.token
 
     if (!githubToken) {
-      return { success: false, message: 'GitHub token not found' }
+      return { success: false, message: 'GitHub token not found', code: 'GITHUB_NOT_BOUND' }
     }
 
     // Validate GitHub URL format to prevent injection attacks
