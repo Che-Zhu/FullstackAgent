@@ -251,6 +251,13 @@ export async function pushToGithub(projectId: string): Promise<RepoInitResult> {
       return { success: false, message: 'GitHub token not found' }
     }
 
+    // Validate GitHub URL format to prevent injection attacks
+    // Allow standard GitHub URLs: https://github.com/username/repo or https://github.com/username/repo.git
+    const githubUrlPattern = /^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-._]+(\.git)?$/
+    if (!githubUrlPattern.test(project.githubRepo)) {
+      return { success: false, message: 'Invalid GitHub repository URL' }
+    }
+
     // Extract owner/repo from URL (e.g., https://github.com/owner/repo)
     // We want to construct: https://oauth2:token@github.com/owner/repo.git
     let repoUrlStr = project.githubRepo
@@ -264,8 +271,9 @@ export async function pushToGithub(projectId: string): Promise<RepoInitResult> {
 
     // Configure remote and push
     // We use 'git remote set-url' if origin exists, or 'git remote add' if it doesn't
+    // SECURITY: Use single quotes around URL to prevent command injection
     const command = `
-      (git remote get-url origin > /dev/null 2>&1 && git remote set-url origin ${authUrl}) || git remote add origin ${authUrl} &&
+      (git remote get-url origin > /dev/null 2>&1 && git remote set-url origin '${authUrl}') || git remote add origin '${authUrl}' &&
       git branch -M main &&
       git push -u origin main
     `.replace(/\n/g, ' ').trim()
