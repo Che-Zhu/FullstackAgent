@@ -103,7 +103,6 @@ async function runInitCommand(baseUrl: string, accessToken: string) {
     300000
   )
 
-  
 }
 
 export type CreateRepoResult = {
