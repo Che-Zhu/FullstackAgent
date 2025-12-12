@@ -221,8 +221,6 @@ export async function commitChanges(projectId: string): Promise<RepoInitResult> 
   }
 }
 
-
-
 /**
  * Push local commits to GitHub
  * @param projectId - The ID of the project
