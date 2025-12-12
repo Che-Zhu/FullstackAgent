@@ -17,8 +17,6 @@ interface StatusBarProps {
   project: ProjectWithRelations;
 }
 
-
-
 export function StatusBar({ project }: StatusBarProps) {
   const database = project.databases?.[0];
   const dbStatus = database?.status || 'CREATING';
